@@ -11,8 +11,8 @@
   tocInclude="true" sortRefs="true" symRefs="true" version="2">
 
 <front>
-  <title>The Multihash Data Format</title>
-  <seriesInfo name="Internet-Draft" value="draft-multiformats-multihash-06"/>
+  <title>The Multiformats Registry Group</title>
+  <seriesInfo name="Internet-Draft" value="draft-multiformats-multiformats-01"/>
 
   <author initials="J." surname="Benet" fullname="Juan Benet">
     <organization>Protocol Labs</organization>
@@ -46,7 +46,23 @@
     </address>
   </author>
 
-  <date month="February" day="19" year="2023" />
+  <author initials="J." surname="Caballero" fullname="Juan Caballero">
+    <organization>learningProof uG</organization>
+    <address>
+      <postal>
+        <street>Kiefholzstrasse</street>
+        <city>Berlin</city>
+        <region>Berlin</region>
+        <code>12435</code>
+        <country>Germany</country>
+      </postal>
+      <phone>+1 415 555 5555</phone>
+      <email>bumblefudge@learningproof.xyz</email>
+      <uri>http://learningproof.xyz/</uri>
+    </address>
+  </author>
+
+  <date month="July" day="21" year="2023" />
   <area>Security</area>
   <workgroup />
   <keyword>digest algorithm</keyword>
@@ -59,13 +75,11 @@
 
   <abstract>
     <t>
-Cryptographic hash functions often have multiple output sizes and encodings.
-This variability makes it difficult for applications to examine a series of
-bytes and determine which hash function produced them. Multihash is a universal
-data format for encoding outputs from hash functions. It is useful to write
-applications that can simultaneously support different hash function outputs as
-well as upgrade their use of hashes over time; Multihash is intended to
-address these needs.
+The multiformats are a group of specifications and corresponding registries that
+enable protocols for self-describing data. They include multibase and
+multihash, which allow for self-describing base-encodings of binary data into
+strings and self-describing hashes over digests according to specific
+algorithms.
     </t>
   </abstract>
 
@@ -84,302 +98,28 @@ or be sent to
 <middle>
   <section anchor="intro" title="Introduction">
     <t>
-Multihash is particularly important in systems which depend on
-cryptographically secure hash functions. Attacks may break the cryptographic
-properties of secure hash functions. These cryptographic breaks are
-particularly painful in large tool ecosystems, where tools may have made
-assumptions about hash values, such as function and digest size. Upgrading
-becomes a nightmare, as all tools which make those assumptions would have
-to be upgraded to use the new hash function and new hash digest length.
-Tools may face serious interoperability problems or error-prone special casing.
-    </t>
-    <t>
-How many programs out there assume a git hash is a SHA-1 hash?
-    </t>
-    <t>
-How many scripts assume the hash value digest is exactly 160 bits?
-    </t>
-    <t>
-How many tools will break when these values change?
-    </t>
-    <t>
-How many programs will fail silently when these values change?
-    </t>
-    <t>
-This is precisely why Multihash was created. It was designed for
-seamlessly upgrading systems that depend on cryptographic hashes.
-    </t>
-    <t>
-When using Multihash, a system warns the consumers of its hash values that
-these may have to be upgraded in case of a break. Even though the system
-may still only use a single hash function at a time, the use of multihash
-makes it clear to applications that hash values may use different hash
-functions or be longer in the future. Tooling, applications, and scripts
-can avoid making assumptions about the length, and read it from the
-multihash value instead. This way, the vast majority of tooling - which
-may not do any checking of hashes - would not have to be upgraded at all.
-This vastly simplifies the upgrade process, avoiding the waste of hundreds
-or thousands of software engineering hours, deep frustrations, and high
-blood pressure.
+The multiformats coordination mechanism arose organically over many years of
+experimentation, mostly within but also outside of the IPFS network and its
+various implementations and networks. As such, the history of its registry to
+date can be found in the discussion history of the public repositories of the
+github organization Multiformats, where registrations still originate in the
+form of issues and pull requests. The governance going forward of this registry
+group is described below under Iana Considerations.
     </t>
   </section>
-  <section anchor="components" title="The Multihash Fields">
-    <t>
-A multihash follows the TLV (type-length-value) pattern and consists of
-several fields composed of a combination of unsigned variable length
-integers and byte information.
-    </t>
-    <section anchor="core-data-types" title="Multihash Core Data Types">
-      <t>
-The following section details the core data types used by the Multihash
-data format.
-    </t>
-      <section anchor="cdt-uvi" title="unsigned variable integer">
-        <t>
-A data type that enables one to express an unsigned integer of variable length.
-        </t>
-        <t>
-When encoding an unsigned variable integer, the unsigned integer is serialized
-seven bits at a time, starting with the least significant bits. The most
-significant bit in each output byte indicates if there is a
-continuation byte. It is not possible to express a signed integer with this
-data type.
-        </t>
-        <texttable anchor="mh-uvi-examples" title="Examples of Unsigned Variable Integers">
-          <ttcol align="center">Value</ttcol>
-          <ttcol align="right">Encoding (bits)</ttcol>
-          <ttcol align="right">hexadecimal notation</ttcol>
-          <c>1</c>
-          <c>00000001</c>
-          <c>0x01</c>
-          <c>127</c>
-          <c>01111111</c>
-          <c>0x7F</c>
-          <c>128</c>
-          <c>10000000 00000001</c>
-          <c>0x8001</c>
-          <c>255</c>
-          <c>11111111 00000001</c>
-          <c>0xFF01</c>
-          <c>300</c>
-          <c>10101100 00000010</c>
-          <c>0xAC02</c>
-          <c>16384</c>
-          <c>10000000 10000000 00000001</c>
-          <c>0x808001</c>
-        </texttable>
-        <t>
-Implementations MUST restrict the size of the varint to a max of nine bytes
-(63 bits). In order to avoid memory attacks on the encoding, the
-aforementioned practical maximum length of nine bytes is used. There is
-no theoretical limit, and future specs can grow this number if it is truly
-necessary to have code or length values larger than 2^31.
-        </t>
-      </section>
-    </section>
-    <section anchor="fields" title="Multihash Fields">
-      <t>
-A multihash follows the TLV (type-length-value) pattern.
-        </t>
-      <section anchor="hfi" title="Hash Function Identifier">
-        <t>
-          The hash function identifier is an
-          <eref target="#cdt-uvi">unsigned variable integer</eref>
-          identifying the hash
-function. The possible values for this field are provided in
-          <eref target="#mh-registry">The Multihash Identifier Registry</eref>.
-        </t>
-      </section>
-      <section anchor="dl" title="Digest Length">
-        <t>
-          The digest length is an
-          <eref target="#cdt-uvi">unsigned variable integer</eref>
-          counting the length of the digest in bytes.
-        </t>
-      </section>
-      <section anchor="dv" title="Digest Value">
-        <t>
-The digest value is the hash function digest with a length of exactly what is
-specified in the digest length, which is specified in bytes.
-        </t>
-      </section>
-    </section>
-    <section anchor="mh-example" title="A Multihash Example">
-      <t>
-
-        For example, the following is an expression of a SHA2-256 hash in hexadecimal
-notation (spaces added for readability purposes):
-        <figure>
-          <artwork>0x12 20 41dd7b6443542e75701aa98a0c235951a28a0d851b11564d20022ab11d2589a8</artwork>
-        </figure>
-        The first byte (0x12) specifies the SHA2-256 hash function. The second byte
-(0x20) specifies the length of the hash, which is 32 bytes. The rest of the
-data specifies the value of the output of the hash function.
-      </t>
-    </section>
-  </section>
-</middle>
-
-<back>
   <references title="Normative References">
-    <reference anchor="RFC6234" target="https://www.rfc-editor.org/info/rfc6234">
-      <front>
-        <title>US Secure Hash Algorithms (SHA and SHA-based HMAC and HKDF)</title>
-        <author fullname="D. Eastlake 3rd" initials="D." surname="Eastlake 3rd"/>
-        <author fullname="T. Hansen" initials="T." surname="Hansen"/>
-        <date month="May" year="2011"/>
-        <abstract>
-          <t>Federal Information Processing Standard, FIPS</t>
-        </abstract>
-      </front>
-      <seriesInfo name="RFC" value="6234"/>
-      <seriesInfo name="DOI" value="10.17487/RFC6234"/>
-    </reference>
-    <reference anchor="RFC7693" target="https://www.rfc-editor.org/info/rfc7693">
-      <front>
-        <title>The BLAKE2 Cryptographic Hash and Message Authentication Code (MAC)</title>
-        <author fullname="M-J. Saarinen" role="editor" surname="M-J. Saarinen"/>
-        <author fullname="J-P. Aumasson" surname="J-P. Aumasson"/>
-        <date month="November" year="2015"/>
-        <abstract>
-          <t>This document describes the cryptographic hash function BLAKE2 and makes the algorithm specification and C source code conveniently available to the Internet community.  BLAKE2 comes in two main flavors: BLAKE2b is optimized for 64-bit platforms and BLAKE2s for smaller architectures.  BLAKE2 can be directly keyed, making it functionally equivalent to a Message Authentication Code (MAC).</t>
-        </abstract>
-      </front>
-      <seriesInfo name="RFC" value="7693"/>
-      <seriesInfo name="DOI" value="10.17487/RFC7693"/>
-    </reference>
   </references>
 
   <references title="Informative References">
-    <reference anchor="RFC6150" target="https://www.rfc-editor.org/info/rfc6150">
-      <front>
-        <title>MD4 to Historic Status</title>
-        <author fullname="S. Turner" initials="S." surname="Turner"/>
-        <author fullname="L. Chen" initials="L." surname="Chen"/>
-        <date month="March" year="2011"/>
-        <abstract>
-          <t>This document retires RFC 1320, which documents the MD4 algorithm, and discusses the reasons for doing so.  This document moves RFC 1320 to Historic status.  This document is not an Internet Standards Track specification; it is published for informational purposes.</t>
-        </abstract>
-      </front>
-      <seriesInfo name="RFC" value="6150"/>
-      <seriesInfo name="DOI" value="10.17487/RFC6150"/>
-    </reference>
-    <reference anchor="RFC6151" target="https://www.rfc-editor.org/info/rfc6151">
-      <front>
-        <title>MD4 to Historic Status</title>
-        <author fullname="S. Turner" initials="S." surname="Turner"/>
-        <author fullname="L. Chen" initials="L." surname="Chen"/>
-        <date month="March" year="2011"/>
-        <abstract>
-          <t>This document retires RFC 1320, which documents the MD4 algorithm, and discusses the reasons for doing so.  This document moves RFC 1320 to Historic status.  This document is not an Internet Standards Track specification; it is published for informational purposes.</t>
-        </abstract>
-      </front>
-      <seriesInfo name="RFC" value="6151"/>
-      <seriesInfo name="DOI" value="10.17487/RFC6151"/>
-    </reference>
   </references>
 
   <section anchor="appendix-a" title="Security Considerations">
     <t>
 There are a number of security considerations to take into account when
-implementing or utilizing this specification.
-
-TBD
+implementing or utilizing these specifications. Consulting the Security
+Considerations of the specification corresponding to each registry within the
+group is recommended.
     </t>
-  </section>
-  <section anchor="appendix-c" title="Test Values">
-
-    <t>
-The multihash examples are chosen to show different hash functions and
-different hash digest lengths at play. The input test data for all of the
-examples in this section is: <figure><artwork>Merkle–Damgård</artwork></figure>
-    </t>
-
-    <section anchor="tv-sha1" title="SHA-1">
-      <t><figure><artwork>
-0x11148a173fd3e32c0fa78b90fe42d305f202244e2739
-      </artwork></figure></t>
-      <t>
-The fields for this multihash are - hashing function: sha1 (0x11),
-length: 20 (0x14), digest: 0x8a173fd3e32c0fa78b90fe42d305f202244e2739
-      </t>
-    </section>
-
-    <section anchor="tv-sha256" title="SHA-256">
-      <t><figure><artwork>
-0x122041dd7b6443542e75701aa98a0c235951a28a0d851b11564d20022ab11d2589a8
-      </artwork></figure></t>
-      <t>
-The fields for this multihash are - hashing function: sha2-256 (0x12),
-length: 32 (0x20), digest: 0x41dd7b6443542e75701aa98a0c235951a28a0d851b11564d20022ab11d2589a8
-      </t>
-    </section>
-
-    <section anchor="tv-sha512-256" title="SHA-512/256">
-      <t><figure><artwork>
-0x132052eb4dd19f1ec522859e12d89706156570f8fbab1824870bc6f8c7d235eef5f4
-      </artwork></figure></t>
-      <t>
-The fields for this multihash are - hashing function: sha2-512 (0x13),
-length: 32 (0x20),
-digest: 0x52eb4dd19f1ec522859e12d89706156570f8fbab1824870bc6f8c7d235eef5f4
-      </t>
-    </section>
-
-    <section anchor="tv-sha512" title="SHA-512">
-      <t><figure><artwork>
-0x134052eb4dd19f1ec522859e12d89706156570f8fbab1824870bc6f8c7d235eef5f4c2cbbafd365f96fb12b1d98a0334870c2ce90355da25e6a1108a6e17c4aaebb0
-      </artwork></figure></t>
-      <t>
-The fields for this multihash are - hashing function: sha2-512 (0x13),
-length: 64 (0x40),
-digest: 0x52eb4dd19f1ec522859e12d89706156570f8fbab1824870bc6f8c7d235eef5f4c2cbbafd365f96fb12b1d98a0334870c2ce90355da25e6a1108a6e17c4aaebb0
-      </t>
-    </section>
-
-    <section anchor="tv-blake2b512" title="blake2b512">
-      <t><figure><artwork>
-0xb24040d91ae0cb0e48022053ab0f8f0dc78d28593d0f1c13ae39c9b169c136a779f21a0496337b6f776a73c1742805c1cc15e792ddb3c92ee1fe300389456ef3dc97e2
-      </artwork></figure></t>
-      <t>
-The fields for this multihash are - hashing function: blake2b-512 (0xb240),
-length: 64 (0x40),
-digest: 0xd91ae0cb0e48022053ab0f8f0dc78d28593d0f1c13ae39c9b169c136a779f21a0496337b6f776a73c1742805c1cc15e792ddb3c92ee1fe300389456ef3dc97e2
-      </t>
-    </section>
-
-    <section anchor="tv-blake2b256" title="blake2b256">
-      <t><figure><artwork>
-0xb220207d0a1371550f3306532ff44520b649f8be05b72674e46fc24468ff74323ab030
-      </artwork></figure></t>
-      <t>
-The fields for this multihash are - hashing function: blake2b-256 (0xb220),
-length: 32 (0x20),
-digest: 0x7d0a1371550f3306532ff44520b649f8be05b72674e46fc24468ff74323ab030
-      </t>
-    </section>
-
-    <section anchor="tv-blake2s256" title="blake2s256">
-      <t><figure><artwork>
-0xb26020a96953281f3fd944a3206219fad61a40b992611b7580f1fa091935db3f7ca13d
-      </artwork></figure></t>
-      <t>
-The fields for this multihash are - hashing function: blake2s-256 (0xb260),
-length: 32 (0x20),
-digest: 0xa96953281f3fd944a3206219fad61a40b992611b7580f1fa091935db3f7ca13d
-      </t>
-    </section>
-
-    <section anchor="tv-blake2s128" title="blake2s128">
-      <t><figure><artwork>
-        0xb250100a4ec6f1629e49262d7093e2f82a3278
-      </artwork></figure></t>
-      <t>
-The fields for this multihash are - hashing function: blake2s-128 (0xb250),
-length: 16 (0x10), digest: 0x0a4ec6f1629e49262d7093e2f82a3278
-      </t>
-    </section>
-
   </section>
   <section anchor="acknowledgements" title="Acknowledgements">
     <t>
@@ -388,413 +128,104 @@ implementations of the specification (in alphabetical order).
     </t>
   </section>
   <section anchor="appendix-d" title="IANA Considerations">
-    <section anchor="mh-registry" title="The Multihash Identifier Registry">
-      <t>
-        The Multihash Identifier Registry contains hash functions supported by Multihash
-        each with its canonical name, its value in hexadecimal notation, and its status.
-        The following initial entries should be added
-        to the registry to be created and maintained at (the suggested URI)
-        <eref target="http://www.iana.org/assignments/multihash-identifiers">http://www.iana.org/assignments/multihash-identifiers</eref>:
-      </t>
-
-      <texttable anchor="mh-registry-table" title="Multihash Identifier Registry">
-        <ttcol align="center">Name</ttcol>
-        <ttcol align="center">Identifier</ttcol>
-        <ttcol align="center">Status</ttcol>
-        <ttcol align="center">Specification</ttcol>
-
-        <c>identity</c><c>0x00</c><c>active</c><c>Unknown</c>
-        <c>sha1</c><c>0x11</c><c>active</c><c><xref target="RFC6234">RFC 6234</xref></c>
-        <c>sha2-256</c><c>0x12</c><c>active</c><c><xref target="RFC6234">RFC 6234</xref></c>
-        <c>sha2-512</c><c>0x13</c><c>active</c><c><xref target="RFC6234">RFC 6234</xref></c>
-        <c>sha3-512</c><c>0x14</c><c>active</c><c>Unknown</c>
-        <c>sha3-384</c><c>0x15</c><c>active</c><c>Unknown</c>
-        <c>sha3-256</c><c>0x16</c><c>active</c><c>Unknown</c>
-        <c>sha3-224</c><c>0x17</c><c>active</c><c>Unknown</c>
-        <c>shake-128</c><c>0x18</c><c>active</c><c>Unknown</c>
-        <c>shake-256</c><c>0x19</c><c>active</c><c>Unknown</c>
-        <c>keccak-224</c><c>0x1a</c><c>active</c><c>Unknown</c>
-        <c>keccak-256</c><c>0x1b</c><c>active</c><c>Unknown</c>
-        <c>keccak-384</c><c>0x1c</c><c>active</c><c>Unknown</c>
-        <c>keccak-512</c><c>0x1d</c><c>active</c><c>Unknown</c>
-        <c>blake3</c><c>0x1e</c><c>active</c><c>Unknown</c>
-        <c>sha2-384</c><c>0x20</c><c>active</c><c><xref target="RFC6234">RFC 6234</xref></c>
-        <c>murmur3-x64-64</c><c>0x22</c><c>active</c><c>Unknown</c>
-        <c>murmur3-32</c><c>0x23</c><c>active</c><c>Unknown</c>
-        <c>dbl-sha2-256</c><c>0x56</c><c>active</c><c>Unknown</c>
-        <c>md4</c><c>0xd4</c><c>deprecated</c><c><xref target="RFC6150">RFC 6150</xref></c>
-        <c>md5</c><c>0xd5</c><c>deprecated</c><c><xref target="RFC6151">RFC 6151</xref></c>
-        <c>sha2-256-trunc254-padded</c><c>0x1012</c><c>active</c><c><xref target="RFC6234">RFC 6234</xref></c>
-        <c>sha2-224</c><c>0x1013</c><c>active</c><c><xref target="RFC6234">RFC 6234</xref></c>
-        <c>sha2-512-224</c><c>0x1014</c><c>active</c><c><xref target="RFC6234">RFC 6234</xref></c>
-        <c>sha2-512-256</c><c>0x1015</c><c>active</c><c><xref target="RFC6234">RFC 6234</xref></c>
-        <c>murmur3-x64-128</c><c>0x1022</c><c>active</c><c>Unknown</c>
-        <c>ripemd-128</c><c>0x1052</c><c>active</c><c>Unknown</c>
-        <c>ripemd-160</c><c>0x1053</c><c>active</c><c>Unknown</c>
-        <c>ripemd-256</c><c>0x1054</c><c>active</c><c>Unknown</c>
-        <c>ripemd-320</c><c>0x1055</c><c>active</c><c>Unknown</c>
-        <c>x11</c><c>0x1100</c><c>active</c><c>Unknown</c>
-        <c>kangarootwelve</c><c>0x1d01</c><c>active</c><c>Unknown</c>
-        <c>sm3-256</c><c>0x534d</c><c>active</c><c>Unknown</c>
-        <c>blake2b-8</c><c>0xb201</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-16</c><c>0xb202</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-24</c><c>0xb203</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-32</c><c>0xb204</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-40</c><c>0xb205</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-48</c><c>0xb206</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-56</c><c>0xb207</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-64</c><c>0xb208</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-72</c><c>0xb209</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-80</c><c>0xb20a</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-88</c><c>0xb20b</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-96</c><c>0xb20c</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-104</c><c>0xb20d</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-112</c><c>0xb20e</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-120</c><c>0xb20f</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-128</c><c>0xb210</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-136</c><c>0xb211</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-144</c><c>0xb212</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-152</c><c>0xb213</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-160</c><c>0xb214</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-168</c><c>0xb215</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-176</c><c>0xb216</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-184</c><c>0xb217</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-192</c><c>0xb218</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-200</c><c>0xb219</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-208</c><c>0xb21a</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-216</c><c>0xb21b</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-224</c><c>0xb21c</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-232</c><c>0xb21d</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-240</c><c>0xb21e</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-248</c><c>0xb21f</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-256</c><c>0xb220</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-264</c><c>0xb221</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-272</c><c>0xb222</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-280</c><c>0xb223</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-288</c><c>0xb224</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-296</c><c>0xb225</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-304</c><c>0xb226</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-312</c><c>0xb227</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-320</c><c>0xb228</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-328</c><c>0xb229</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-336</c><c>0xb22a</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-344</c><c>0xb22b</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-352</c><c>0xb22c</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-360</c><c>0xb22d</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-368</c><c>0xb22e</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-376</c><c>0xb22f</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-384</c><c>0xb230</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-392</c><c>0xb231</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-400</c><c>0xb232</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-408</c><c>0xb233</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-416</c><c>0xb234</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-424</c><c>0xb235</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-432</c><c>0xb236</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-440</c><c>0xb237</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-448</c><c>0xb238</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-456</c><c>0xb239</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-464</c><c>0xb23a</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-472</c><c>0xb23b</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-480</c><c>0xb23c</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-488</c><c>0xb23d</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-496</c><c>0xb23e</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-504</c><c>0xb23f</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2b-512</c><c>0xb240</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-8</c><c>0xb241</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-16</c><c>0xb242</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-24</c><c>0xb243</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-32</c><c>0xb244</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-40</c><c>0xb245</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-48</c><c>0xb246</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-56</c><c>0xb247</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-64</c><c>0xb248</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-72</c><c>0xb249</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-80</c><c>0xb24a</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-88</c><c>0xb24b</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-96</c><c>0xb24c</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-104</c><c>0xb24d</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-112</c><c>0xb24e</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-120</c><c>0xb24f</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-128</c><c>0xb250</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-136</c><c>0xb251</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-144</c><c>0xb252</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-152</c><c>0xb253</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-160</c><c>0xb254</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-168</c><c>0xb255</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-176</c><c>0xb256</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-184</c><c>0xb257</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-192</c><c>0xb258</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-200</c><c>0xb259</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-208</c><c>0xb25a</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-216</c><c>0xb25b</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-224</c><c>0xb25c</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-232</c><c>0xb25d</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-240</c><c>0xb25e</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-248</c><c>0xb25f</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>blake2s-256</c><c>0xb260</c><c>active</c><c><xref target="RFC7693">RFC 7693</xref></c>
-        <c>skein256-8</c><c>0xb301</c><c>active</c><c>Unknown</c>
-        <c>skein256-16</c><c>0xb302</c><c>active</c><c>Unknown</c>
-        <c>skein256-24</c><c>0xb303</c><c>active</c><c>Unknown</c>
-        <c>skein256-32</c><c>0xb304</c><c>active</c><c>Unknown</c>
-        <c>skein256-40</c><c>0xb305</c><c>active</c><c>Unknown</c>
-        <c>skein256-48</c><c>0xb306</c><c>active</c><c>Unknown</c>
-        <c>skein256-56</c><c>0xb307</c><c>active</c><c>Unknown</c>
-        <c>skein256-64</c><c>0xb308</c><c>active</c><c>Unknown</c>
-        <c>skein256-72</c><c>0xb309</c><c>active</c><c>Unknown</c>
-        <c>skein256-80</c><c>0xb30a</c><c>active</c><c>Unknown</c>
-        <c>skein256-88</c><c>0xb30b</c><c>active</c><c>Unknown</c>
-        <c>skein256-96</c><c>0xb30c</c><c>active</c><c>Unknown</c>
-        <c>skein256-104</c><c>0xb30d</c><c>active</c><c>Unknown</c>
-        <c>skein256-112</c><c>0xb30e</c><c>active</c><c>Unknown</c>
-        <c>skein256-120</c><c>0xb30f</c><c>active</c><c>Unknown</c>
-        <c>skein256-128</c><c>0xb310</c><c>active</c><c>Unknown</c>
-        <c>skein256-136</c><c>0xb311</c><c>active</c><c>Unknown</c>
-        <c>skein256-144</c><c>0xb312</c><c>active</c><c>Unknown</c>
-        <c>skein256-152</c><c>0xb313</c><c>active</c><c>Unknown</c>
-        <c>skein256-160</c><c>0xb314</c><c>active</c><c>Unknown</c>
-        <c>skein256-168</c><c>0xb315</c><c>active</c><c>Unknown</c>
-        <c>skein256-176</c><c>0xb316</c><c>active</c><c>Unknown</c>
-        <c>skein256-184</c><c>0xb317</c><c>active</c><c>Unknown</c>
-        <c>skein256-192</c><c>0xb318</c><c>active</c><c>Unknown</c>
-        <c>skein256-200</c><c>0xb319</c><c>active</c><c>Unknown</c>
-        <c>skein256-208</c><c>0xb31a</c><c>active</c><c>Unknown</c>
-        <c>skein256-216</c><c>0xb31b</c><c>active</c><c>Unknown</c>
-        <c>skein256-224</c><c>0xb31c</c><c>active</c><c>Unknown</c>
-        <c>skein256-232</c><c>0xb31d</c><c>active</c><c>Unknown</c>
-        <c>skein256-240</c><c>0xb31e</c><c>active</c><c>Unknown</c>
-        <c>skein256-248</c><c>0xb31f</c><c>active</c><c>Unknown</c>
-        <c>skein256-256</c><c>0xb320</c><c>active</c><c>Unknown</c>
-        <c>skein512-8</c><c>0xb321</c><c>active</c><c>Unknown</c>
-        <c>skein512-16</c><c>0xb322</c><c>active</c><c>Unknown</c>
-        <c>skein512-24</c><c>0xb323</c><c>active</c><c>Unknown</c>
-        <c>skein512-32</c><c>0xb324</c><c>active</c><c>Unknown</c>
-        <c>skein512-40</c><c>0xb325</c><c>active</c><c>Unknown</c>
-        <c>skein512-48</c><c>0xb326</c><c>active</c><c>Unknown</c>
-        <c>skein512-56</c><c>0xb327</c><c>active</c><c>Unknown</c>
-        <c>skein512-64</c><c>0xb328</c><c>active</c><c>Unknown</c>
-        <c>skein512-72</c><c>0xb329</c><c>active</c><c>Unknown</c>
-        <c>skein512-80</c><c>0xb32a</c><c>active</c><c>Unknown</c>
-        <c>skein512-88</c><c>0xb32b</c><c>active</c><c>Unknown</c>
-        <c>skein512-96</c><c>0xb32c</c><c>active</c><c>Unknown</c>
-        <c>skein512-104</c><c>0xb32d</c><c>active</c><c>Unknown</c>
-        <c>skein512-112</c><c>0xb32e</c><c>active</c><c>Unknown</c>
-        <c>skein512-120</c><c>0xb32f</c><c>active</c><c>Unknown</c>
-        <c>skein512-128</c><c>0xb330</c><c>active</c><c>Unknown</c>
-        <c>skein512-136</c><c>0xb331</c><c>active</c><c>Unknown</c>
-        <c>skein512-144</c><c>0xb332</c><c>active</c><c>Unknown</c>
-        <c>skein512-152</c><c>0xb333</c><c>active</c><c>Unknown</c>
-        <c>skein512-160</c><c>0xb334</c><c>active</c><c>Unknown</c>
-        <c>skein512-168</c><c>0xb335</c><c>active</c><c>Unknown</c>
-        <c>skein512-176</c><c>0xb336</c><c>active</c><c>Unknown</c>
-        <c>skein512-184</c><c>0xb337</c><c>active</c><c>Unknown</c>
-        <c>skein512-192</c><c>0xb338</c><c>active</c><c>Unknown</c>
-        <c>skein512-200</c><c>0xb339</c><c>active</c><c>Unknown</c>
-        <c>skein512-208</c><c>0xb33a</c><c>active</c><c>Unknown</c>
-        <c>skein512-216</c><c>0xb33b</c><c>active</c><c>Unknown</c>
-        <c>skein512-224</c><c>0xb33c</c><c>active</c><c>Unknown</c>
-        <c>skein512-232</c><c>0xb33d</c><c>active</c><c>Unknown</c>
-        <c>skein512-240</c><c>0xb33e</c><c>active</c><c>Unknown</c>
-        <c>skein512-248</c><c>0xb33f</c><c>active</c><c>Unknown</c>
-        <c>skein512-256</c><c>0xb340</c><c>active</c><c>Unknown</c>
-        <c>skein512-264</c><c>0xb341</c><c>active</c><c>Unknown</c>
-        <c>skein512-272</c><c>0xb342</c><c>active</c><c>Unknown</c>
-        <c>skein512-280</c><c>0xb343</c><c>active</c><c>Unknown</c>
-        <c>skein512-288</c><c>0xb344</c><c>active</c><c>Unknown</c>
-        <c>skein512-296</c><c>0xb345</c><c>active</c><c>Unknown</c>
-        <c>skein512-304</c><c>0xb346</c><c>active</c><c>Unknown</c>
-        <c>skein512-312</c><c>0xb347</c><c>active</c><c>Unknown</c>
-        <c>skein512-320</c><c>0xb348</c><c>active</c><c>Unknown</c>
-        <c>skein512-328</c><c>0xb349</c><c>active</c><c>Unknown</c>
-        <c>skein512-336</c><c>0xb34a</c><c>active</c><c>Unknown</c>
-        <c>skein512-344</c><c>0xb34b</c><c>active</c><c>Unknown</c>
-        <c>skein512-352</c><c>0xb34c</c><c>active</c><c>Unknown</c>
-        <c>skein512-360</c><c>0xb34d</c><c>active</c><c>Unknown</c>
-        <c>skein512-368</c><c>0xb34e</c><c>active</c><c>Unknown</c>
-        <c>skein512-376</c><c>0xb34f</c><c>active</c><c>Unknown</c>
-        <c>skein512-384</c><c>0xb350</c><c>active</c><c>Unknown</c>
-        <c>skein512-392</c><c>0xb351</c><c>active</c><c>Unknown</c>
-        <c>skein512-400</c><c>0xb352</c><c>active</c><c>Unknown</c>
-        <c>skein512-408</c><c>0xb353</c><c>active</c><c>Unknown</c>
-        <c>skein512-416</c><c>0xb354</c><c>active</c><c>Unknown</c>
-        <c>skein512-424</c><c>0xb355</c><c>active</c><c>Unknown</c>
-        <c>skein512-432</c><c>0xb356</c><c>active</c><c>Unknown</c>
-        <c>skein512-440</c><c>0xb357</c><c>active</c><c>Unknown</c>
-        <c>skein512-448</c><c>0xb358</c><c>active</c><c>Unknown</c>
-        <c>skein512-456</c><c>0xb359</c><c>active</c><c>Unknown</c>
-        <c>skein512-464</c><c>0xb35a</c><c>active</c><c>Unknown</c>
-        <c>skein512-472</c><c>0xb35b</c><c>active</c><c>Unknown</c>
-        <c>skein512-480</c><c>0xb35c</c><c>active</c><c>Unknown</c>
-        <c>skein512-488</c><c>0xb35d</c><c>active</c><c>Unknown</c>
-        <c>skein512-496</c><c>0xb35e</c><c>active</c><c>Unknown</c>
-        <c>skein512-504</c><c>0xb35f</c><c>active</c><c>Unknown</c>
-        <c>skein512-512</c><c>0xb360</c><c>active</c><c>Unknown</c>
-        <c>skein1024-8</c><c>0xb361</c><c>active</c><c>Unknown</c>
-        <c>skein1024-16</c><c>0xb362</c><c>active</c><c>Unknown</c>
-        <c>skein1024-24</c><c>0xb363</c><c>active</c><c>Unknown</c>
-        <c>skein1024-32</c><c>0xb364</c><c>active</c><c>Unknown</c>
-        <c>skein1024-40</c><c>0xb365</c><c>active</c><c>Unknown</c>
-        <c>skein1024-48</c><c>0xb366</c><c>active</c><c>Unknown</c>
-        <c>skein1024-56</c><c>0xb367</c><c>active</c><c>Unknown</c>
-        <c>skein1024-64</c><c>0xb368</c><c>active</c><c>Unknown</c>
-        <c>skein1024-72</c><c>0xb369</c><c>active</c><c>Unknown</c>
-        <c>skein1024-80</c><c>0xb36a</c><c>active</c><c>Unknown</c>
-        <c>skein1024-88</c><c>0xb36b</c><c>active</c><c>Unknown</c>
-        <c>skein1024-96</c><c>0xb36c</c><c>active</c><c>Unknown</c>
-        <c>skein1024-104</c><c>0xb36d</c><c>active</c><c>Unknown</c>
-        <c>skein1024-112</c><c>0xb36e</c><c>active</c><c>Unknown</c>
-        <c>skein1024-120</c><c>0xb36f</c><c>active</c><c>Unknown</c>
-        <c>skein1024-128</c><c>0xb370</c><c>active</c><c>Unknown</c>
-        <c>skein1024-136</c><c>0xb371</c><c>active</c><c>Unknown</c>
-        <c>skein1024-144</c><c>0xb372</c><c>active</c><c>Unknown</c>
-        <c>skein1024-152</c><c>0xb373</c><c>active</c><c>Unknown</c>
-        <c>skein1024-160</c><c>0xb374</c><c>active</c><c>Unknown</c>
-        <c>skein1024-168</c><c>0xb375</c><c>active</c><c>Unknown</c>
-        <c>skein1024-176</c><c>0xb376</c><c>active</c><c>Unknown</c>
-        <c>skein1024-184</c><c>0xb377</c><c>active</c><c>Unknown</c>
-        <c>skein1024-192</c><c>0xb378</c><c>active</c><c>Unknown</c>
-        <c>skein1024-200</c><c>0xb379</c><c>active</c><c>Unknown</c>
-        <c>skein1024-208</c><c>0xb37a</c><c>active</c><c>Unknown</c>
-        <c>skein1024-216</c><c>0xb37b</c><c>active</c><c>Unknown</c>
-        <c>skein1024-224</c><c>0xb37c</c><c>active</c><c>Unknown</c>
-        <c>skein1024-232</c><c>0xb37d</c><c>active</c><c>Unknown</c>
-        <c>skein1024-240</c><c>0xb37e</c><c>active</c><c>Unknown</c>
-        <c>skein1024-248</c><c>0xb37f</c><c>active</c><c>Unknown</c>
-        <c>skein1024-256</c><c>0xb380</c><c>active</c><c>Unknown</c>
-        <c>skein1024-264</c><c>0xb381</c><c>active</c><c>Unknown</c>
-        <c>skein1024-272</c><c>0xb382</c><c>active</c><c>Unknown</c>
-        <c>skein1024-280</c><c>0xb383</c><c>active</c><c>Unknown</c>
-        <c>skein1024-288</c><c>0xb384</c><c>active</c><c>Unknown</c>
-        <c>skein1024-296</c><c>0xb385</c><c>active</c><c>Unknown</c>
-        <c>skein1024-304</c><c>0xb386</c><c>active</c><c>Unknown</c>
-        <c>skein1024-312</c><c>0xb387</c><c>active</c><c>Unknown</c>
-        <c>skein1024-320</c><c>0xb388</c><c>active</c><c>Unknown</c>
-        <c>skein1024-328</c><c>0xb389</c><c>active</c><c>Unknown</c>
-        <c>skein1024-336</c><c>0xb38a</c><c>active</c><c>Unknown</c>
-        <c>skein1024-344</c><c>0xb38b</c><c>active</c><c>Unknown</c>
-        <c>skein1024-352</c><c>0xb38c</c><c>active</c><c>Unknown</c>
-        <c>skein1024-360</c><c>0xb38d</c><c>active</c><c>Unknown</c>
-        <c>skein1024-368</c><c>0xb38e</c><c>active</c><c>Unknown</c>
-        <c>skein1024-376</c><c>0xb38f</c><c>active</c><c>Unknown</c>
-        <c>skein1024-384</c><c>0xb390</c><c>active</c><c>Unknown</c>
-        <c>skein1024-392</c><c>0xb391</c><c>active</c><c>Unknown</c>
-        <c>skein1024-400</c><c>0xb392</c><c>active</c><c>Unknown</c>
-        <c>skein1024-408</c><c>0xb393</c><c>active</c><c>Unknown</c>
-        <c>skein1024-416</c><c>0xb394</c><c>active</c><c>Unknown</c>
-        <c>skein1024-424</c><c>0xb395</c><c>active</c><c>Unknown</c>
-        <c>skein1024-432</c><c>0xb396</c><c>active</c><c>Unknown</c>
-        <c>skein1024-440</c><c>0xb397</c><c>active</c><c>Unknown</c>
-        <c>skein1024-448</c><c>0xb398</c><c>active</c><c>Unknown</c>
-        <c>skein1024-456</c><c>0xb399</c><c>active</c><c>Unknown</c>
-        <c>skein1024-464</c><c>0xb39a</c><c>active</c><c>Unknown</c>
-        <c>skein1024-472</c><c>0xb39b</c><c>active</c><c>Unknown</c>
-        <c>skein1024-480</c><c>0xb39c</c><c>active</c><c>Unknown</c>
-        <c>skein1024-488</c><c>0xb39d</c><c>active</c><c>Unknown</c>
-        <c>skein1024-496</c><c>0xb39e</c><c>active</c><c>Unknown</c>
-        <c>skein1024-504</c><c>0xb39f</c><c>active</c><c>Unknown</c>
-        <c>skein1024-512</c><c>0xb3a0</c><c>active</c><c>Unknown</c>
-        <c>skein1024-520</c><c>0xb3a1</c><c>active</c><c>Unknown</c>
-        <c>skein1024-528</c><c>0xb3a2</c><c>active</c><c>Unknown</c>
-        <c>skein1024-536</c><c>0xb3a3</c><c>active</c><c>Unknown</c>
-        <c>skein1024-544</c><c>0xb3a4</c><c>active</c><c>Unknown</c>
-        <c>skein1024-552</c><c>0xb3a5</c><c>active</c><c>Unknown</c>
-        <c>skein1024-560</c><c>0xb3a6</c><c>active</c><c>Unknown</c>
-        <c>skein1024-568</c><c>0xb3a7</c><c>active</c><c>Unknown</c>
-        <c>skein1024-576</c><c>0xb3a8</c><c>active</c><c>Unknown</c>
-        <c>skein1024-584</c><c>0xb3a9</c><c>active</c><c>Unknown</c>
-        <c>skein1024-592</c><c>0xb3aa</c><c>active</c><c>Unknown</c>
-        <c>skein1024-600</c><c>0xb3ab</c><c>active</c><c>Unknown</c>
-        <c>skein1024-608</c><c>0xb3ac</c><c>active</c><c>Unknown</c>
-        <c>skein1024-616</c><c>0xb3ad</c><c>active</c><c>Unknown</c>
-        <c>skein1024-624</c><c>0xb3ae</c><c>active</c><c>Unknown</c>
-        <c>skein1024-632</c><c>0xb3af</c><c>active</c><c>Unknown</c>
-        <c>skein1024-640</c><c>0xb3b0</c><c>active</c><c>Unknown</c>
-        <c>skein1024-648</c><c>0xb3b1</c><c>active</c><c>Unknown</c>
-        <c>skein1024-656</c><c>0xb3b2</c><c>active</c><c>Unknown</c>
-        <c>skein1024-664</c><c>0xb3b3</c><c>active</c><c>Unknown</c>
-        <c>skein1024-672</c><c>0xb3b4</c><c>active</c><c>Unknown</c>
-        <c>skein1024-680</c><c>0xb3b5</c><c>active</c><c>Unknown</c>
-        <c>skein1024-688</c><c>0xb3b6</c><c>active</c><c>Unknown</c>
-        <c>skein1024-696</c><c>0xb3b7</c><c>active</c><c>Unknown</c>
-        <c>skein1024-704</c><c>0xb3b8</c><c>active</c><c>Unknown</c>
-        <c>skein1024-712</c><c>0xb3b9</c><c>active</c><c>Unknown</c>
-        <c>skein1024-720</c><c>0xb3ba</c><c>active</c><c>Unknown</c>
-        <c>skein1024-728</c><c>0xb3bb</c><c>active</c><c>Unknown</c>
-        <c>skein1024-736</c><c>0xb3bc</c><c>active</c><c>Unknown</c>
-        <c>skein1024-744</c><c>0xb3bd</c><c>active</c><c>Unknown</c>
-        <c>skein1024-752</c><c>0xb3be</c><c>active</c><c>Unknown</c>
-        <c>skein1024-760</c><c>0xb3bf</c><c>active</c><c>Unknown</c>
-        <c>skein1024-768</c><c>0xb3c0</c><c>active</c><c>Unknown</c>
-        <c>skein1024-776</c><c>0xb3c1</c><c>active</c><c>Unknown</c>
-        <c>skein1024-784</c><c>0xb3c2</c><c>active</c><c>Unknown</c>
-        <c>skein1024-792</c><c>0xb3c3</c><c>active</c><c>Unknown</c>
-        <c>skein1024-800</c><c>0xb3c4</c><c>active</c><c>Unknown</c>
-        <c>skein1024-808</c><c>0xb3c5</c><c>active</c><c>Unknown</c>
-        <c>skein1024-816</c><c>0xb3c6</c><c>active</c><c>Unknown</c>
-        <c>skein1024-824</c><c>0xb3c7</c><c>active</c><c>Unknown</c>
-        <c>skein1024-832</c><c>0xb3c8</c><c>active</c><c>Unknown</c>
-        <c>skein1024-840</c><c>0xb3c9</c><c>active</c><c>Unknown</c>
-        <c>skein1024-848</c><c>0xb3ca</c><c>active</c><c>Unknown</c>
-        <c>skein1024-856</c><c>0xb3cb</c><c>active</c><c>Unknown</c>
-        <c>skein1024-864</c><c>0xb3cc</c><c>active</c><c>Unknown</c>
-        <c>skein1024-872</c><c>0xb3cd</c><c>active</c><c>Unknown</c>
-        <c>skein1024-880</c><c>0xb3ce</c><c>active</c><c>Unknown</c>
-        <c>skein1024-888</c><c>0xb3cf</c><c>active</c><c>Unknown</c>
-        <c>skein1024-896</c><c>0xb3d0</c><c>active</c><c>Unknown</c>
-        <c>skein1024-904</c><c>0xb3d1</c><c>active</c><c>Unknown</c>
-        <c>skein1024-912</c><c>0xb3d2</c><c>active</c><c>Unknown</c>
-        <c>skein1024-920</c><c>0xb3d3</c><c>active</c><c>Unknown</c>
-        <c>skein1024-928</c><c>0xb3d4</c><c>active</c><c>Unknown</c>
-        <c>skein1024-936</c><c>0xb3d5</c><c>active</c><c>Unknown</c>
-        <c>skein1024-944</c><c>0xb3d6</c><c>active</c><c>Unknown</c>
-        <c>skein1024-952</c><c>0xb3d7</c><c>active</c><c>Unknown</c>
-        <c>skein1024-960</c><c>0xb3d8</c><c>active</c><c>Unknown</c>
-        <c>skein1024-968</c><c>0xb3d9</c><c>active</c><c>Unknown</c>
-        <c>skein1024-976</c><c>0xb3da</c><c>active</c><c>Unknown</c>
-        <c>skein1024-984</c><c>0xb3db</c><c>active</c><c>Unknown</c>
-        <c>skein1024-992</c><c>0xb3dc</c><c>active</c><c>Unknown</c>
-        <c>skein1024-1000</c><c>0xb3dd</c><c>active</c><c>Unknown</c>
-        <c>skein1024-1008</c><c>0xb3de</c><c>active</c><c>Unknown</c>
-        <c>skein1024-1016</c><c>0xb3df</c><c>active</c><c>Unknown</c>
-        <c>skein1024-1024</c><c>0xb3e0</c><c>active</c><c>Unknown</c>
-        <c>poseidon-bls12_381-a2-fc1</c><c>0xb401</c><c>active</c><c>Unknown</c>
-        <c>poseidon-bls12_381-a2-fc1-sc</c><c>0xb402</c><c>active</c><c>Unknown</c>
-        <c>ssz-sha2-256-bmt</c><c>0xb502</c><c>active</c><c>Unknown</c>
-      </texttable>
-
-      <t>
-NOTE: The most up to date place for developers to find the table above is
-<eref target="https://github.com/multiformats/multicodec/blob/master/table.csv">https://github.com/multiformats/multicodec/blob/master/table.csv</eref>.
-      </t>
-    </section>
-
-    <section anchor="mh-digest-algorithm" title="The 'mh' Digest Algorithm">
-      <t>
-        This memo registers the "mh" digest-algorithm in the
-        <eref target="https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml">HTTP Digest Algorithm Values</eref>
-        registry with the following values:
-      </t>
-
-        <t>Digest Algorithm: mh</t>
-        <t>Description: The multibase-serialized value of a multihash-supported algorithm.</t>
-        <t>References: this document</t>
-        <t>Status: standard</t>
-
-    </section>
-
-    <section anchor="mh-ni-hash-algorithm" title="The 'mh' Named Information Hash Algorithm">
-      <t>
-        This memo registers the "mh" hash algorithm in the
-        <eref target="https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg">Named Information Hash Algorithm</eref>
-        registry with the following values:
-      </t>
-
-        <t>ID: 49</t>
-        <t>Hash Name String: mh</t>
-        <t>Value Length: variable</t>
-        <t>Reference: this document</t>
-        <t>Status: current</t>
-
-    </section>
+    <t>
+The primary function of multiformats is to support multiple value encodings
+registered in an organized and interoperable way. In turn, this requires the
+ability to register new encodings for each multiformat type. Encodings are
+indicated using some form of flag (e.g. a prefix) and such the registries of
+these flags can become exhausted (e.g. smaller corners of the group, like the
+single-byte range), congested (if commonly-used encodings require abnormally
+long flags), or "squatted" (i.e. reserved too early without proven adoption and
+utility).
+    </t>
+    <t>
+Essentially, registrations and re-registrations proceed through the following
+steps-- if all requirements are already met at time of initial registration,
+these can be collapsed.  Essentially, they are: 
+    </t>
+    <t>
+1. "Reserved" entries can be inserted directly by protocol designers or Stewards
+to prevent interoperability or functional pitfalls - "Reserved" entries can also
+be submitted on an [Experimental
+Use](https://www.rfc-editor.org/rfc/rfc8126.html#section-4.2) basis.
+Registrations at this level are essentially courtesies to other registrants and
+invitations to collaborate or provide feedback. These can be deprecated in favor
+of competing "Draft" or "Final" proposals for the same unique entry code. 
+    </t>
+    <t>
+2. "Draft" entries can be submitted by mature projects that can reasonably
+document the requirements below and pass [Expert
+Review](https://www.rfc-editor.org/rfc/rfc8126.html#section-4.5)
+    </t>
+    <t>
+3. "Final" entries must document the complete requirements below and pass
+review on a [Specification
+Required](https://www.rfc-editor.org/rfc/rfc8126.html#section-4.6) basis.
+    </t>
+    <t>
+In order to ensure that our registries are as extensible as they need to be but
+do not suffer from over-use, we have a set of criteria which are used to ensure
+that only encodings that broadly benefit the community are registered.
+    </t>
+    <t>
+In order to be accepted for registration as draft, an encoding MUST:
+    </t>
+    <t>
+1. Volunteer at least one person who will be available to answer questions and
+address issues through the registration period and for some time after the
+encoding is accepted. 
+    </t>
+    <t>
+2. Additionally, contact information for a change controller (not necessarily
+the same person as above, ideally an organization assuming long-term
+responsibility for systems using the multiformat) in case of updates to or
+disputes around an entry.
+    </t>
+    <t>
+3. Provide evidence that the encoding is supported in at least two production
+implementations.
+    </t>
+    <t>
+4. Describe a convincing use case for the deployment of this specific encoding.
+    </t>
+    <t>
+5. Produce a specification indicating how to process it at a level of detail
+that makes implementations testable. (References to an external specification is
+acceptable if it comes from a body with sufficient durability guarantees.)
+    </t>
+    <t>
+And, for that registration to proceed to `final` designation, it must also
+    </t>
+    <t>
+6. Provide a comprehensive test suite sufficient to support independent
+interoperable implementations, or at least be comprised entirely of technologies
+that are already mature and have test suites.
+    </t>
+    <t>
+7. Produce a specification indicating how to process it at a level of detail
+that makes multiple independent implementations demonstrably interoperable.
+    </t>
+    <t>
+If an encoding seems plausible but does not yet fulfil all requirements, it can
+be registered with a `draft` status.  In exceptional cases, consensus of the
+Stewards and Experts can excuse one of the above requirements. 
+    </t>
+    <t>
+Encodings with a `draft` status should be revisited by [Specs
+Stewards](https://github.com/orgs/ipfs/teams/specs-stewards/members) regularly.
+If after some reasonable amount of time (enough to make progress, but ideally no
+more than a year) a `draft` encoding has not resolved issues with its
+registration, it will become `deprecated`. After an encoding is `deprecated` for
+some time at the discretion of the Stewards and Experts, decided to be
+sufficient for its use to be reasonably considered eliminated or historical, its
+code becomes available for reuse (but remains listed under new entries as
+`deprecated`). 
+    </t>
+    <t>
+Accepted encodings that meet all of the requirements above (confirmed by the
+Experts) will bee granted a status of `permanent` within a reasonable amount of
+time by the Stewards.
+    </t>
   </section>
 </back>
 </rfc>

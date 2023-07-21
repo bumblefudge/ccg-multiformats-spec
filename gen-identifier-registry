@@ -5,12 +5,12 @@ import codecs
 import csv
 import urllib.request
 
-url = 'https://raw.githubusercontent.com/multiformats/multicodec/master/table.csv'
+url = 'https://github.com/multiformats/multibase/blob/b9ca0426d9d1f8c4b7be6925e5b8be04cabe6ab9/multibase.csv'
 stream = urllib.request.urlopen(url)
 csvdata = csv.reader(codecs.iterdecode(stream, 'utf-8'))
 
 print("""
-      <texttable anchor="mh-registry-table" title="Multihash Identifier Registry">
+      <texttable anchor="mf-registry-group" title="Multiformats Registry Group">
         <ttcol align="center">Name</ttcol>
         <ttcol align="center">Identifier</ttcol>
         <ttcol align="center">Status</ttcol>
