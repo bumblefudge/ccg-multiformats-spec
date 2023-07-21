@@ -129,7 +129,7 @@ The editors would like to thank the following individuals for feedback on and
 implementations of the specification (in alphabetical order).
     </t>
   </section>
-  <section anchor="appendix-d" title="IANA Considerations">
+  <section anchor="appendix-c" title="IANA Considerations">
     <t>
 The primary function of the multiformats registry group is to support multiple
 value encodings registered in an organized and interoperable way. In turn, this
