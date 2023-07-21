@@ -131,14 +131,14 @@ implementations of the specification (in alphabetical order).
   </section>
   <section anchor="appendix-d" title="IANA Considerations">
     <t>
-The primary function of multiformats is to support multiple value encodings
-registered in an organized and interoperable way. In turn, this requires the
-ability to register new encodings for each multiformat type. Encodings are
-indicated using some form of flag (e.g. a prefix) and such the registries of
-these flags can become exhausted (e.g. smaller corners of the group, like the
-single-byte range), congested (if commonly-used encodings require abnormally
-long flags), or "squatted" (i.e. reserved too early without proven adoption and
-utility).
+The primary function of the multiformats registry group is to support multiple
+value encodings registered in an organized and interoperable way. In turn, this
+requires the ability to register new encodings for each multiformat type.
+Encodings are indicated using some form of flag (e.g. a prefix) and such the
+registries of these flags can become exhausted (e.g. smaller corners of the
+group, like the single-byte range), congested (if commonly-used encodings
+require abnormally long flags), or "squatted" (i.e. reserved too early without
+proven adoption and utility).
     </t>
     <t>
 Essentially, registrations and re-registrations proceed through the following
@@ -148,21 +148,25 @@ these can be collapsed.  Essentially, they are:
     <t>
 1. "Reserved" entries can be inserted directly by protocol designers or Stewards
 to prevent interoperability or functional pitfalls - "Reserved" entries can also
-be submitted on an [Experimental
-Use](https://www.rfc-editor.org/rfc/rfc8126.html#section-4.2) basis.
-Registrations at this level are essentially courtesies to other registrants and
-invitations to collaborate or provide feedback. These can be deprecated in favor
-of competing "Draft" or "Final" proposals for the same unique entry code. 
+be submitted on an <eref
+target="https://www.rfc-editor.org/rfc/rfc8126.html#section-4.2">Experimental
+Use</eref>
+basis as specified in RFC8126. Registrations at this level are essentially
+courtesies to other registrants and invitations to collaborate or provide
+feedback. These can be deprecated in favor of competing "Draft" or "Final"
+proposals for the same unique entry code. 
     </t>
     <t>
 2. "Draft" entries can be submitted by mature projects that can reasonably
-document the requirements below and pass [Expert
-Review](https://www.rfc-editor.org/rfc/rfc8126.html#section-4.5)
+document the requirements below and pass  <eref
+target="https://www.rfc-editor.org/rfc/rfc8126.html#section-4.5">Expert
+Review</eref>.
     </t>
     <t>
-3. "Final" entries must document the complete requirements below and pass
-review on a [Specification
-Required](https://www.rfc-editor.org/rfc/rfc8126.html#section-4.6) basis.
+3. "Final" entries must document the complete requirements below and pass review
+on a  <eref
+target="https://www.rfc-editor.org/rfc/rfc8126.html#section-4.6">Specification
+Required</eref> basis.
     </t>
     <t>
 In order to ensure that our registries are as extensible as they need to be but
@@ -213,15 +217,15 @@ be registered with a `draft` status.  In exceptional cases, consensus of the
 Stewards and Experts can excuse one of the above requirements. 
     </t>
     <t>
-Encodings with a `draft` status should be revisited by [Specs
-Stewards](https://github.com/orgs/ipfs/teams/specs-stewards/members) regularly.
-If after some reasonable amount of time (enough to make progress, but ideally no
-more than a year) a `draft` encoding has not resolved issues with its
-registration, it will become `deprecated`. After an encoding is `deprecated` for
-some time at the discretion of the Stewards and Experts, decided to be
-sufficient for its use to be reasonably considered eliminated or historical, its
-code becomes available for reuse (but remains listed under new entries as
-`deprecated`). 
+Encodings with a `draft` status should be revisited by <eref
+target="https://github.com/orgs/ipfs/teams/specs-stewards/members">Specs
+Stewards</eref> regularly. If after some reasonable amount of time (enough to
+make progress, but ideally no more than a year) a `draft` encoding has not
+resolved issues with its registration, it will become `deprecated`. After an
+encoding is `deprecated` for some time at the discretion of the Stewards and
+Experts, decided to be sufficient for its use to be reasonably considered
+eliminated or historical, its code becomes available for reuse (but remains
+listed under new entries as `deprecated`). 
     </t>
     <t>
 Accepted encodings that meet all of the requirements above (confirmed by the
