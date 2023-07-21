@@ -7,7 +7,7 @@
 <?rfc symrefs="yes" ?>
 <rfc xmlns:xi="http://www.w3.org/2001/XInclude" category="info"
   ipr="trust200902" submissionType="IETF"
-  docName="draft-multiformats-multihash-06"
+  docName="draft-multiformats-multiformats-01"
   tocInclude="true" sortRefs="true" symRefs="true" version="2">
 
 <front>
@@ -227,5 +227,6 @@ Experts) will bee granted a status of `permanent` within a reasonable amount of
 time by the Stewards.
     </t>
   </section>
+ </middle>
 </back>
 </rfc>
