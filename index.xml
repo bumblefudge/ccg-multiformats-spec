@@ -107,6 +107,8 @@ form of issues and pull requests. The governance going forward of this registry
 group is described below under Iana Considerations.
     </t>
   </section>
+</middle>
+<back>
   <references title="Normative References">
   </references>
 
@@ -227,7 +229,5 @@ Experts) will bee granted a status of `permanent` within a reasonable amount of
 time by the Stewards.
     </t>
   </section>
-</middle>
-<back>
 </back>
 </rfc>
