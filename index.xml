@@ -163,7 +163,7 @@ target="https://www.rfc-editor.org/rfc/rfc8126.html#section-4.5">Expert
 Review</eref>.
     </t>
     <t>
-3. "Final" entries must document the complete requirements below and pass review
+3. "Final" entries MUST document the complete requirements below and pass review
 on a  <eref
 target="https://www.rfc-editor.org/rfc/rfc8126.html#section-4.6">Specification
 Required</eref> basis.
@@ -200,7 +200,7 @@ that makes implementations testable. (References to an external specification is
 acceptable if it comes from a body with sufficient durability guarantees.)
     </t>
     <t>
-And, for that registration to proceed to `final` designation, it must also
+And, for that registration to proceed to `final` designation, it MUST also
     </t>
     <t>
 6. Provide a comprehensive test suite sufficient to support independent
